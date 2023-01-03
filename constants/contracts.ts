@@ -2,15 +2,66 @@ import { AbiItem } from 'web3-utils';
 import saleContractAbi from '../constants/saleContractAbi.json'
 import Web3 from 'web3';
 
-export const getProviders = (chainId: number | undefined) => {
-  const providers = {
-    5: 'https://eth-goerli.nodereal.io/v1/8a4432e42df94dcca2814fde8aea2a2e',
-    97: 'https://bsc-testnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5',
-    56: 'https://bsc-dataseed1.binance.org',
-    // 1: 'https://api.mycryptoapi.com/eth'
-    1: 'https://eth-mainnet.public.blastapi.io'
+export const checkRPC = async(chainId: number | undefined) => {
+  let setNumber = 1
+  let httpProvider: string = "0"
+  let rpc: object | boolean = false
+
+  while (setNumber < 6) {
+    if (rpc) {
+      break;
+    }
+    try {
+      httpProvider = await getProviders(chainId, setNumber)
+      rpc = await fetch(httpProvider)
+    } catch (error) {
+      setNumber = setNumber + 1
+    }
   }
-  return providers[chainId as keyof typeof providers] ?? console.error('chainId is undefined')
+
+  return httpProvider
+}
+
+export const getProviders = async (chainId: number | undefined, setNumber: number) => {
+  const providers = {
+        5: 'https://eth-goerli.nodereal.io/v1/8a4432e42df94dcca2814fde8aea2a2e',
+        97: 'https://bsc-testnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5',
+        56: 'https://bsc-dataseed1.binance.org',
+        1: 'https://api.mycryptoapi.com/eth'
+      }
+  const RPCset = {
+    1:  {
+          5: 'https://eth-goerli.nodereal.io/v1/8a4432e42df94dcca2814fde8aea2a2e',
+          97: 'https://bsc-testnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5',
+          56: 'https://bsc-dataseed1.binance.org',
+          1: 'https://api.mycryptoapi.com/eth'
+        },
+    2: {
+          5: 'https://eth-goerli.g.alchemy.com/v2/demo',
+          97: 'https://bsc-testnet.public.blastapi.io',
+          56: 'https://bsc-mainnet.public.blastapi.io',
+          1: 'https://eth-mainnet.public.blastapi.io'
+        },
+    3:  {
+          5: 'https://eth-goerli.public.blastapi.io',
+          97: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
+          56: 'https://bsc-mainnet.public.blastapi.io',
+          1: 'https://eth-rpc.gateway.pokt.network'
+        },
+    4:  {
+          5: 'https://eth-goerli.public.blastapi.io',
+          97: 'https://data-seed-prebsc-2-s1.binance.org:8545/',
+          56: 'https://bsc-mainnet.public.blastapi.io',
+          1: 'https://eth-mainnet.gateway.pokt.network/v1/5f3453978e354ab992c4da79'
+        },
+    5:  {
+          5: 'https://eth-goerli.public.blastapi.io',
+          97: 'http://data-seed-prebsc-1-s2.binance.org:8545/',
+          56: 'https://bsc-mainnet.public.blastapi.io',
+          1: 'https://eth-mainnet.g.alchemy.com/v2/demo'
+        }
+  }
+  return RPCset[setNumber as keyof typeof RPCset][chainId as keyof typeof providers] ?? console.error('chainId is undefined')
 }
 
 export const getTokenSaleContractAddress = (chainId: number | undefined) => {
@@ -28,6 +79,8 @@ export const getTokenSaleContractAddress = (chainId: number | undefined) => {
 };
 
 export const getTokenSaleContract = async(chainId: number | undefined) => {
-  const web3 = new Web3(new Web3.providers.HttpProvider(getProviders(chainId)))
+  const httpProvider: string = await checkRPC(chainId)
+  
+  const web3 = new Web3(new Web3.providers.HttpProvider(httpProvider))
   return new web3.eth.Contract(saleContractAbi as AbiItem[], getTokenSaleContractAddress(chainId))
 }
